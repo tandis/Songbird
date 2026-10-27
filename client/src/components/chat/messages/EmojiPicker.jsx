@@ -79,6 +79,9 @@ export default function EmojiPicker({ onSelect }) {
         placeholder="جستجوی ایموجی..."
         value={search}
         onChange={(event) => setSearch(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.preventDefault();
+        }}
         className="mb-3 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-800 outline-hidden focus:border-emerald-500 dark:border-emerald-500/40 dark:bg-slate-800 dark:text-white"
       />
       <div className="mb-2 flex gap-1" aria-label="دسته‌های ایموجی">
