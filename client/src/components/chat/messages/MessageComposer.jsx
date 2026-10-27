@@ -10,6 +10,7 @@ import {
   Play,
   Reply,
   Send,
+  SmilePlus,
   Close,
   Video,
 } from "../../../icons/lucide.js";
@@ -20,6 +21,7 @@ import {
   parseCallLogBody,
 } from "../../../utils/messageContent.js";
 import VerifiedBadge from "../../common/VerifiedBadge.jsx";
+import EmojiPicker from "./EmojiPicker.jsx";
 import UserRoleBadge from "../../common/UserRoleBadge.jsx";
 import Tooltip from "../../common/Tooltip.jsx";
 
@@ -94,6 +96,9 @@ export function MessageComposer({
   const previousEditIdRef = useRef(0);
   const appliedEditIdRef = useRef(0);
   const [messageValue, setMessageValue] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef(null);
+  const emojiSelectionRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingMs, setRecordingMs] = useState(0);
   const recordingTimerRef = useRef(null);
@@ -640,6 +645,60 @@ export function MessageComposer({
     };
   }, [isDesktop]);
 
+
+  useEffect(() => {
+    if (!showEmojiPicker) return undefined;
+    const handleOutsideClick = (event) => {
+      if (!emojiPickerRef.current?.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    const handleEscape = (event) => {
+      if (event.key === "Escape") setShowEmojiPicker(false);
+    };
+    document.addEventListener("pointerdown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showEmojiPicker]);
+
+  useEffect(() => {
+    setShowEmojiPicker(false);
+  }, [activeChatId]);
+
+  const insertEmoji = (emoji) => {
+    const input = messageInputRef.current;
+    if (!input) return;
+    const [start, end] = emojiSelectionRef.current || [
+      messageValue.length,
+      messageValue.length,
+    ];
+    const nextValue =
+      messageValue.slice(0, start) + emoji + messageValue.slice(end);
+    const maxLength = Number(messageMaxChars);
+    if (Number.isFinite(maxLength) && maxLength > 0 && nextValue.length > maxLength)
+      return;
+
+    setMessageValue(nextValue);
+    onMessageInput?.(nextValue);
+    setShowEmojiPicker(false);
+    const nextCaret = start + emoji.length;
+    emojiSelectionRef.current = [nextCaret, nextCaret];
+    requestAnimationFrame(() => {
+      focusElementPreventScroll(input);
+      input.setSelectionRange(nextCaret, nextCaret);
+      applyTextareaSize({
+        textareaEl: input,
+        maxTextareaHeight,
+        composerEl: composerRef.current,
+        onComposerResize,
+        onComposerHeightChange,
+      });
+    });
+  };
+
   if (!activeChatId) return null;
 
   return (
@@ -659,6 +718,7 @@ export function MessageComposer({
           return;
         }
         handleSend(event);
+        setShowEmojiPicker(false);
         requestAnimationFrame(() => {
           if (!editTarget) {
             setMessageValue("");
@@ -1091,6 +1151,30 @@ export function MessageComposer({
                   restoreComposerFocus();
                 }}
               />
+            </div>
+
+            <div className="relative shrink-0" ref={emojiPickerRef}>
+              <button
+                type="button"
+                aria-label="انتخاب ایموجی"
+                aria-expanded={showEmojiPicker}
+                aria-controls="songbird-emoji-picker"
+                onPointerDown={(event) => {
+                  const input = messageInputRef.current;
+                  if (input) {
+                    emojiSelectionRef.current = [input.selectionStart, input.selectionEnd];
+                  }
+                  event.preventDefault();
+                }}
+                onClick={() => {
+                  setShowUploadMenu(false);
+                  setShowEmojiPicker((previous) => !previous);
+                }}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-emerald-700 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-emerald-500 dark:text-emerald-200 dark:hover:bg-emerald-500/10"
+              >
+                <SmilePlus size={20} />
+              </button>
+              {showEmojiPicker ? <EmojiPicker onSelect={insertEmoji} /> : null}
             </div>
             <textarea
               ref={messageInputRef}
