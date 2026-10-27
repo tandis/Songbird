@@ -80,7 +80,10 @@ export default function EmojiPicker({ onSelect }) {
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter") event.preventDefault();
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+          }
         }}
         className="mb-3 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-800 outline-hidden focus:border-emerald-500 dark:border-emerald-500/40 dark:bg-slate-800 dark:text-white"
       />
